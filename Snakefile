@@ -1,0 +1,43 @@
+# Snakemake workflow for various types of metagenomic analyses.
+
+report: "report/workflow.rst"
+
+include: "rules/common.smk"
+include: "rules/other.smk"
+
+include: "rules/annotation.smk"
+include: "rules/assembly.smk"
+include: "rules/binning.smk"
+include: "rules/classification.smk"
+include: "rules/preprocessing.smk"
+include: "rules/quantification.smk"
+include: "rules/taxonomy.smk"
+include: "rules/diamond_annotation.smk"
+
+
+def all_input(wildcards):
+    from scripts.common import classify_input, annotation_input, binning_input, diamond_annotation_input
+    """
+    Function defining all requested inputs for the rule all (below).
+    """
+    wanted_input = []
+
+    if config["run_preprocessing"] or config["preprocessing"]["fastqc"]:
+        wanted_input.append(results+"/report/samples_report.html")
+
+    if config["run_assembly"]:
+        # add assembly stats
+        wanted_input.append(results+"/report/assembly/assembly_stats.pdf")
+        # get annotation input
+        wanted_input += annotation_input(config, assemblies)
+        # get binning input
+        wanted_input += binning_input(config)
+
+    
+    wanted_input += classify_input(config)
+    wanted_input += diamond_annotation_input(config)
+    return wanted_input
+
+##### master target rule #####
+rule all:
+    input: all_input
